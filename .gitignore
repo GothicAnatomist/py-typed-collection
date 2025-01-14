@@ -11,6 +11,9 @@ wheels/
 
 # IDE settings
 .vscode
+htmlcov
+.coverage
+.ruff_cache
 
 # Package manager settings
 uv.lock
