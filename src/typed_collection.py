@@ -16,10 +16,14 @@ uniqueness constraints, iteration, and list-like methods.
 from abc import ABC
 from typing import (
     Any,
+    Collection,
+    Generator,
     Generic,
     Iterable,
     List,
     Optional,
+    Reversible,
+    Self,
     Tuple,
     Type,
     TypeVarTuple,
@@ -35,7 +39,7 @@ from exception import InvalidItemType, ItemAlreadyExists
 ItemType = TypeVarTuple("ItemType")
 
 
-class TypedCollection(ABC, Generic[Unpack[ItemType]]):
+class TypedCollection(ABC, Collection, Reversible, Generic[Unpack[ItemType]]):
     """
     Abstract collection class with defined member type(s).
 
@@ -45,6 +49,8 @@ class TypedCollection(ABC, Generic[Unpack[ItemType]]):
 
     Args:
         ABC (ABC): Helper class for creating abstract classes
+        Collection (Collection): Inheriting from Collection
+        Reversible (Reversible): Inheriting from Reversible
         Generic (ItemType): Generic typing to define which object types are
         valid within the collection using the TypeVarTuple, ItemType.
     """
@@ -86,6 +92,39 @@ class TypedCollection(ABC, Generic[Unpack[ItemType]]):
     @property
     def _is_untyped(self):
         return self._item_type == (Any,)
+
+    def __len__(self) -> int:
+        return len(self._collection)
+
+    def __iter__(self) -> Generator[Any, None, None]:
+        for item in self._collection:
+            yield item
+
+    def __reversed__(self) -> Generator[Any, None, None]:
+        for item in reversed(self._collection):
+            yield item
+
+    def __contains__(self, item: Any) -> bool:
+        return item in self._collection
+
+    def __add__(self, other) -> Self:
+        new_collection = self.__class__()
+        new_collection.extend(self)
+
+        if isinstance(other, self._item_type):
+            new_collection.append(other)
+            return new_collection
+
+        if isinstance(other, type(self)):
+            new_collection.extend(other)
+            return new_collection
+
+        raise TypeError(
+            "Object passed is not instance of " f"'{self._item_type}' or '{type(self)}'"
+        )
+
+    def __radd__(self, other) -> Self:
+        return self.__add__(other)
 
     def append(self, item: Any) -> None:
         """
